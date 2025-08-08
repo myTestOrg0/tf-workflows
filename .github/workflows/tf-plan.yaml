@@ -13,10 +13,6 @@ on:
       ENCRYPTION_KEY:
         required: true
 
-concurrency:
-  group: terraform_plan
-  cancel-in-progress: false
-
 jobs:
   plan_terraform_changes:
     runs-on: ubuntu-latest
