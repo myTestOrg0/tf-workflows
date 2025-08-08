@@ -13,10 +13,6 @@ on:
       ENCRYPTION_KEY:
         required: true
 
-concurrency:
-  group: terraform_apply
-  cancel-in-progress: false
-
 jobs:
   apply_terraform_changes:
     env:
