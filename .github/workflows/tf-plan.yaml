@@ -10,8 +10,6 @@ on:
     secrets:
       GH_APP_TOKEN:
         required: true
-      GITHUB_TOKEN:
-        required: true
       ENCRYPTION_KEY:
         required: true
 
