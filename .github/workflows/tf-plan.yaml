@@ -1,0 +1,71 @@
+name: Plan Terraform Changes (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      terraform_version:
+        required: false
+        type: string
+        default: '1.12.2'
+    secrets:
+      GH_APP_TOKEN:
+        required: true
+      GITHUB_TOKEN:
+        required: true
+      ENCRYPTION_KEY:
+        required: true
+
+concurrency:
+  group: terraform_plan
+  cancel-in-progress: false
+
+jobs:
+  plan_terraform_changes:
+    runs-on: ubuntu-latest
+    environment: terraform_main
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Try to copy terraform.tfstate.enc from terraform_state branch
+        run: |
+          git config user.name "$USER_NAME"
+          git config user.email "${{ github.actor_id }}+$USER_NAME@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git fetch origin terraform_state
+          if git cat-file -e origin/terraform_state:terraform.tfstate.enc; then
+            echo "File found in terraform_state branch. Extracting..."
+            git checkout origin/terraform_state -- terraform.tfstate.enc
+          else
+            echo "File terraform.tfstate.enc not found in terraform_state branch. Skipping."
+          fi
+
+      - name: Decrypt Terraform state file
+        continue-on-error: true
+        env:
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: bash ./decrypt.sh
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform plan
+        run: terraform plan -out=plan.tfplan
+
+      - name: Save Terraform plan output
+        run: terraform show -no-color -compact-warnings plan.tfplan > plan-output.txt
+
+      - name: Upload plan output artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plan-output
+          path: plan-output.txt
