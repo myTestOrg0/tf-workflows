@@ -12,7 +12,7 @@ on:
         description: "Terraform version (e.g. 1.9.x or latest)"
         type: string
         required: false
-        default: "latest"
+        default: "1.12.2"
       use-backend:
         description: "Run init with backend enabled (true) or use -backend=false"
         type: boolean
