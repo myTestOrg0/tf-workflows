@@ -1,0 +1,53 @@
+name: Terraform Validate (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: "Directory to run Terraform in"
+        type: string
+        required: false
+        default: "."
+      terraform-version:
+        description: "Terraform version (e.g. 1.9.x or latest)"
+        type: string
+        required: false
+        default: "latest"
+      use-backend:
+        description: "Run init with backend enabled (true) or use -backend=false"
+        type: boolean
+        required: false
+        default: false
+    # If a caller needs cloud creds, they can pass them as secrets here.
+    secrets: {}
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs['terraform-version'] }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          if [ "${{ inputs.use-backend }}" = "true" ]; then
+            terraform init
+          else
+            terraform init -backend=false
+          fi
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
